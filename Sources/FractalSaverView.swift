@@ -14,6 +14,10 @@ final class FractalSaverView: ScreenSaverView {
     private var frameNo = 0
     private var watchdogInternal = false
     private var fpsLabel: NSTextField?
+    private var hudFrames = 0
+    private var hudWindowStart: CFTimeInterval = 0
+    private var lastHudFormula = ""
+    private var lastHudPath = ""
 
     private static let thumbnailPlaceholderSize = NSSize(width: 160, height: 100)
 
@@ -29,6 +33,9 @@ final class FractalSaverView: ScreenSaverView {
 
     private func commonInit(isPreview: Bool) {
         animationTimeInterval = isPreview ? 1.0 / 20.0 : 1.0 / 30.0
+        // Layer-backed parent so a HUD sibling composites above CAMetalLayer.
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
 
         var mtkFrame = bounds
         if mtkFrame.width < 10 || mtkFrame.height < 10 {
@@ -44,6 +51,8 @@ final class FractalSaverView: ScreenSaverView {
         view.colorPixelFormat = .bgra8Unorm
         view.enableSetNeedsDisplay = false
         view.isPaused = true
+        // Sync Metal presents with Core Animation so HUD siblings stay visible.
+        view.presentsWithTransaction = true
         view.layer?.magnificationFilter = .linear
         view.layer?.minificationFilter = .linear
 
@@ -58,7 +67,7 @@ final class FractalSaverView: ScreenSaverView {
             NSLog("[FractalSaver] Renderer initialization failed")
         }
 
-        installFpsHudIfNeeded()
+        installFpsHud()
     }
 
     override func viewDidMoveToWindow() {
@@ -72,6 +81,7 @@ final class FractalSaverView: ScreenSaverView {
         }
         ensureDiscreteMetalDeviceIfNeeded()
         ensureMtkLayout()
+        applyHudVisibility()
     }
 
     override func startAnimation() {
@@ -85,6 +95,8 @@ final class FractalSaverView: ScreenSaverView {
         ensureDiscreteMetalDeviceIfNeeded()
         ensureMtkLayout()
         renderer?.reloadPreferences()
+        renderer?.beginRandomPath()
+        applyHudVisibility()
     }
 
     override func stopAnimation() {
@@ -103,6 +115,7 @@ final class FractalSaverView: ScreenSaverView {
         frameNo += 1
         if watchdogInternal { return }
         mtkView.draw()
+        tickHud()
     }
 
     @objc private func watchdogCheckTicks() {
@@ -117,6 +130,7 @@ final class FractalSaverView: ScreenSaverView {
         guard size.width >= 10, size.height >= 10 else { return }
         mtkView.frame = NSRect(origin: .zero, size: size)
         applyPresentationDrawable()
+        layoutFpsHud()
     }
 
     /// Cap the drawable at 1280 on the long edge (full presentation, not half).
@@ -173,6 +187,7 @@ final class FractalSaverView: ScreenSaverView {
                 self.renderer = newRenderer
                 mtkView.delegate = newRenderer
             }
+            self.layoutFpsHud()
         }
     }
 
@@ -193,41 +208,95 @@ final class FractalSaverView: ScreenSaverView {
         configOpen = false
         sheetController = nil
         renderer?.reloadPreferences()
+        applyHudVisibility()
         if watchdogInternal {
             mtkView?.isPaused = false
         }
     }
 
-    private func installFpsHudIfNeeded() {
-        guard ProcessInfo.processInfo.processName == "FractalTest" else { return }
-        let label = NSTextField(labelWithString: "… fps")
-        label.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
+    private func installFpsHud() {
+        guard fpsLabel == nil else { return }
+
+        // Sibling of MTKView (not a subview): Metal covers MTKView children.
+        let pad: CGFloat = isPreview ? 4 : 10
+        let height: CGFloat = isPreview ? 18 : 24
+        let label = NSTextField(frame: NSRect(x: pad, y: pad, width: 200, height: height))
+        label.font = NSFont.monospacedDigitSystemFont(ofSize: isPreview ? 10 : 13, weight: .medium)
         label.textColor = .white
-        label.backgroundColor = NSColor(white: 0, alpha: 0.45)
+        label.backgroundColor = NSColor(white: 0, alpha: 0.65)
         label.drawsBackground = true
         label.isBordered = false
         label.isBezeled = false
+        label.isEditable = false
+        label.isSelectable = false
         label.alignment = .left
         label.lineBreakMode = .byTruncatingTail
-        label.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(label)
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
-            label.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-        ])
+        label.stringValue = " … fps "
+        label.wantsLayer = true
+        label.layer?.zPosition = 10_000
+        label.autoresizingMask = [.width, .maxYMargin]
+        addSubview(label, positioned: .above, relativeTo: mtkView)
         fpsLabel = label
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleFrameStats(_:)),
             name: Renderer.statsNotification,
             object: nil
         )
+        layoutFpsHud()
+        applyHudVisibility()
     }
 
-    @objc private func handleFrameStats(_ note: Notification) {
-        guard let fps = note.userInfo?["fps"] as? Double else { return }
-        let gpuMs = note.userInfo?["gpuMs"] as? Double ?? 0
-        let dropped = note.userInfo?["dropped"] as? Double ?? 0
+    private func layoutFpsHud() {
+        guard let fpsLabel else { return }
+        let pad: CGFloat = isPreview ? 4 : 10
+        let height: CGFloat = isPreview ? 18 : 24
+        let host = bounds.width >= 10 ? bounds : (mtkView?.bounds ?? bounds)
+        let width = max(120, host.width - pad * 2)
+        // Non-flipped: origin bottom-left → place near top.
+        let y = max(pad, host.height - height - pad)
+        fpsLabel.frame = NSRect(x: pad, y: y, width: width, height: height)
+        addSubview(fpsLabel, positioned: .above, relativeTo: mtkView)
+        fpsLabel.layer?.zPosition = 10_000
+    }
+
+    private func applyHudVisibility() {
+        let show = Defaults.readShowHud()
+        layoutFpsHud()
+        fpsLabel?.isHidden = !show
+        if show {
+            hudFrames = 0
+            hudWindowStart = 0
+            if fpsLabel?.stringValue.trimmingCharacters(in: .whitespaces).isEmpty != false {
+                fpsLabel?.stringValue = " … fps "
+            }
+        }
+    }
+
+    private func tickHud() {
+        guard Defaults.readShowHud(), fpsLabel != nil else { return }
+        let status = renderer?.hudStatus
+        if let status {
+            lastHudFormula = status.formula
+            lastHudPath = status.path
+        }
+        let now = CACurrentMediaTime()
+        if hudWindowStart == 0 {
+            hudWindowStart = now
+            hudFrames = 0
+        }
+        hudFrames += 1
+        let dt = now - hudWindowStart
+        guard dt >= 0.4 else { return }
+        let fps = Double(hudFrames) / dt
+        hudFrames = 0
+        hudWindowStart = now
+        updateHudText(fps: fps, gpuMs: 0, dropped: 0)
+    }
+
+    private func updateHudText(fps: Double, gpuMs: Double, dropped: Double) {
+        layoutFpsHud()
         var text = String(format: "%.1f fps  ·  Ziel 30", fps)
         if gpuMs >= 0.5 {
             text += String(format: "  ·  GPU %.0f ms", gpuMs)
@@ -235,13 +304,37 @@ final class FractalSaverView: ScreenSaverView {
         if dropped >= 0.5 {
             text += String(format: "  ·  −%.0f dropped/s", dropped)
         }
+        if !lastHudFormula.isEmpty {
+            text += "  ·  \(lastHudFormula)"
+            if !lastHudPath.isEmpty {
+                text += " · \(lastHudPath)"
+            }
+        }
         fpsLabel?.stringValue = " \(text) "
+        fpsLabel?.isHidden = false
     }
 
-    func commitConfiguration(formula: String, palette: String, speed: Int) {
+    @objc private func handleFrameStats(_ note: Notification) {
+        let show = Defaults.readShowHud()
+        fpsLabel?.isHidden = !show
+        guard show, let fps = note.userInfo?["fps"] as? Double else { return }
+        if let formula = note.userInfo?["formula"] as? String, !formula.isEmpty {
+            lastHudFormula = formula
+        }
+        if let path = note.userInfo?["path"] as? String, !path.isEmpty {
+            lastHudPath = path
+        }
+        let gpuMs = note.userInfo?["gpuMs"] as? Double ?? 0
+        let dropped = note.userInfo?["dropped"] as? Double ?? 0
+        updateHudText(fps: fps, gpuMs: gpuMs, dropped: dropped)
+    }
+
+    func commitConfiguration(formula: String, palette: String, speed: Int, showHud: Bool) {
         Defaults.writeFormula(formula)
         Defaults.writePalette(palette)
         Defaults.writeSpeedPercent(speed)
+        Defaults.writeShowHud(showHud)
+        applyHudVisibility()
         renderer?.reloadPreferences()
     }
 }

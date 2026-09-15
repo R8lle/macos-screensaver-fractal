@@ -55,12 +55,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let fps = note.userInfo?["fps"] as? Double else { return }
             let gpuMs = note.userInfo?["gpuMs"] as? Double ?? 0
             let dropped = note.userInfo?["dropped"] as? Double ?? 0
+            let formula = note.userInfo?["formula"] as? String ?? ""
+            let path = note.userInfo?["path"] as? String ?? ""
             var title = String(format: "Fractal (Test) — %.1f fps", fps)
             if gpuMs >= 0.5 {
                 title += String(format: " · GPU %.0f ms", gpuMs)
             }
             if dropped >= 0.5 {
                 title += String(format: " · −%.0f dropped/s", dropped)
+            }
+            if !formula.isEmpty {
+                title += " · \(formula)"
+                if !path.isEmpty {
+                    title += " · \(path)"
+                }
             }
             self?.window.title = title
         }

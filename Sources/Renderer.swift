@@ -45,6 +45,8 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var droppedInWindow = 0
     private var gpuSecondsInWindow = 0.0
     private var gpuSamplesInWindow = 0
+    private var statusFormula = ""
+    private var statusPath = ""
 
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
@@ -137,6 +139,9 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.isPreview = isPreview
         super.init()
         reloadPreferences()
+        pickRandomTarget(avoiding: nil)
+        lastTargetIndex = targetIndex
+        scale = formula.tuning.overviewScale
     }
 
     func reloadPreferences() {
@@ -145,8 +150,8 @@ final class Renderer: NSObject, MTKViewDelegate {
         let next = FormulaCatalog.named(Defaults.readFormula())
         if next.id != formula.id {
             formula = next
-            targetIndex = 0
-            lastTargetIndex = 0
+            pickRandomTarget(avoiding: nil)
+            lastTargetIndex = targetIndex
             scale = next.tuning.overviewScale
             lastScale = 0
             fadingOut = false
@@ -155,6 +160,43 @@ final class Renderer: NSObject, MTKViewDelegate {
         } else {
             formula = next
         }
+    }
+
+    /// Random zoom path. Prefer a different target than `avoiding` when possible.
+    private func pickRandomTarget(avoiding: Int?) {
+        let count = formula.targets.count
+        guard count > 0 else {
+            targetIndex = 0
+            return
+        }
+        guard count > 1, let avoiding, avoiding >= 0, avoiding < count else {
+            targetIndex = Int.random(in: 0..<count)
+            return
+        }
+        var next = Int.random(in: 0..<count)
+        if next == avoiding {
+            next = (next + 1 + Int.random(in: 0..<(count - 1))) % count
+        }
+        targetIndex = next
+    }
+
+    /// Start a new zoom path at overview (used when the saver animation begins).
+    /// Current formula/path label for the on-screen HUD.
+    var hudStatus: (formula: String, path: String) {
+        statsLock.lock()
+        defer { statsLock.unlock() }
+        return (statusFormula, statusPath)
+    }
+
+    func beginRandomPath() {
+        pickRandomTarget(avoiding: targetIndex)
+        lastTargetIndex = targetIndex
+        scale = formula.tuning.overviewScale
+        lastScale = 0
+        fadingOut = false
+        fade = 1
+        interiorSince = 0
+        lastTime = 0
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -205,6 +247,8 @@ final class Renderer: NSObject, MTKViewDelegate {
         let gpuMs = gpuSamplesInWindow > 0
             ? (gpuSecondsInWindow / Double(gpuSamplesInWindow)) * 1000
             : 0
+        let formulaName = statusFormula
+        let pathName = statusPath
         presentedInWindow = 0
         droppedInWindow = 0
         gpuSecondsInWindow = 0
@@ -214,7 +258,13 @@ final class Renderer: NSObject, MTKViewDelegate {
             NotificationCenter.default.post(
                 name: Renderer.statsNotification,
                 object: nil,
-                userInfo: ["fps": fps, "gpuMs": gpuMs, "dropped": droppedPerSec]
+                userInfo: [
+                    "fps": fps,
+                    "gpuMs": gpuMs,
+                    "dropped": droppedPerSec,
+                    "formula": formulaName,
+                    "path": pathName,
+                ]
             )
         }
     }
@@ -251,6 +301,10 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
         if targetIndex >= targets.count { targetIndex = 0 }
         let target = targets[targetIndex]
+        statsLock.lock()
+        statusFormula = formula.displayName
+        statusPath = target.name
+        statsLock.unlock()
         let cap = formula.tuning.maxIterCap
         let rawIters = 120.0 + max(0, -log10(max(scale, 1e-12))) * 75.0
         let iters = UInt32(min(cap, max(80, Int(rawIters))))
@@ -413,7 +467,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         if fadingOut {
             fade -= dt / Self.fadeSeconds
             if fade <= 0 {
-                targetIndex = (targetIndex + 1) % max(formula.targets.count, 1)
+                pickRandomTarget(avoiding: targetIndex)
                 scale = formula.tuning.overviewScale
                 fadingOut = false
                 fade = 1

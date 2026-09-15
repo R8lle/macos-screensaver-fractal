@@ -96,8 +96,11 @@ static float3 sampleFractal(constant Uniforms &u, constant float4 *ref, float2 p
     float2 dc = float2(ndc.x * u.aspect, ndc.y) * u.scale;
     const uint julia = 1u;
     const uint ship = 2u;
-    float2 delta = (u.formula == julia) ? dc : float2(0.0);
-    float2 addC = (u.formula == julia) ? float2(0.0) : dc;
+    const uint tricorn = 3u;
+    const uint shipJulia = 4u;
+    bool juliaLike = (u.formula == julia) || (u.formula == shipJulia);
+    float2 delta = juliaLike ? dc : float2(0.0);
+    float2 addC = juliaLike ? float2(0.0) : dc;
 
     uint i = 0;
     float mag = 0.0;
@@ -110,12 +113,18 @@ static float3 sampleFractal(constant Uniforms &u, constant float4 *ref, float2 p
         mag = dot(z, z);
         if (mag > 256.0) break;
 
-        if (u.formula == ship) {
+        if (u.formula == ship || u.formula == shipJulia) {
             float sx = Zhi.x < 0.0 ? -1.0 : 1.0;
             float sy = Zhi.y < 0.0 ? -1.0 : 1.0;
             float2 Zf = float2(abs(Zhi.x), abs(Zhi.y));
             float2 dlt = float2(sx * delta.x, sy * delta.y);
             delta = 2.0 * cmul(Zf, dlt) + cmul(dlt, dlt) + addC;
+        } else if (u.formula == tricorn) {
+            // conj(Z+δ)^2 − conj(Z)^2 = 2 conj(Z) conj(δ) + conj(δ)^2
+            float2 Zh = float2(Zhi.x, -Zhi.y);
+            float2 Zl = float2(Zlo.x, -Zlo.y);
+            float2 dlt = float2(delta.x, -delta.y);
+            delta = 2.0 * (cmul(Zh, dlt) + cmul(Zl, dlt)) + cmul(dlt, dlt) + addC;
         } else {
             delta = 2.0 * (cmul(Zhi, delta) + cmul(Zlo, delta)) + cmul(delta, delta) + addC;
         }

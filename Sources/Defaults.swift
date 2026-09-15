@@ -103,4 +103,20 @@ enum Defaults {
     static func writeSpeedPercent(_ percent: Int) {
         setValue(min(maxSpeed, max(minSpeed, percent)), forKey: speedKey)
     }
+
+    // MARK: - HUD (test window fps / path label)
+
+    static let showHudKey = "show_hud"
+    static let defaultShowHud = true
+
+    static func readShowHud() -> Bool {
+        if object(forKey: showHudKey) == nil { return defaultShowHud }
+        return store.bool(forKey: showHudKey)
+    }
+
+    static func writeShowHud(_ show: Bool) {
+        store.set(show, forKey: showHudKey)
+        // One sync so System Settings → ScreenSaverEngine sees the toggle.
+        store.synchronize()
+    }
 }

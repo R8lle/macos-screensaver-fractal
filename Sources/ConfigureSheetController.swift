@@ -4,7 +4,7 @@ private final class FlippedContentView: NSView {
     override var isFlipped: Bool { true }
 }
 
-/// Options window: formula + palette + zoom speed.
+/// Options window: formula + palette + zoom speed + HUD toggle.
 final class ConfigureSheetController: NSObject, NSWindowDelegate {
     let window: NSWindow
     weak var owner: FractalSaverView?
@@ -13,12 +13,13 @@ final class ConfigureSheetController: NSObject, NSWindowDelegate {
     private let palettePopup: NSPopUpButton
     private let speedSlider: NSSlider
     private let speedValue: NSTextField
+    private let hudCheckbox: NSButton
     private var didEnd = false
 
     init(owner: FractalSaverView?) {
         self.owner = owner
         let width: CGFloat = 420
-        let height: CGFloat = 210
+        let height: CGFloat = 250
 
         let content = FlippedContentView(frame: NSRect(x: 0, y: 0, width: width, height: height))
         let window = NSWindow(
@@ -68,13 +69,22 @@ final class ConfigureSheetController: NSObject, NSWindowDelegate {
         self.speedValue = speedValue
         content.addSubview(speedValue)
 
-        let cancel = NSButton(frame: NSRect(x: 210, y: 150, width: 90, height: 32))
+        let hudCheckbox = NSButton(
+            checkboxWithTitle: "FPS / Pfad anzeigen",
+            target: nil,
+            action: nil
+        )
+        hudCheckbox.frame = NSRect(x: 20, y: 134, width: 380, height: 24)
+        self.hudCheckbox = hudCheckbox
+        content.addSubview(hudCheckbox)
+
+        let cancel = NSButton(frame: NSRect(x: 210, y: 190, width: 90, height: 32))
         cancel.title = "Abbrechen"
         cancel.bezelStyle = .rounded
         cancel.keyEquivalent = "\u{1b}"
         content.addSubview(cancel)
 
-        let ok = NSButton(frame: NSRect(x: 310, y: 150, width: 90, height: 32))
+        let ok = NSButton(frame: NSRect(x: 310, y: 190, width: 90, height: 32))
         ok.title = "OK"
         ok.bezelStyle = .rounded
         ok.keyEquivalent = "\r"
@@ -105,6 +115,7 @@ final class ConfigureSheetController: NSObject, NSWindowDelegate {
         let speed = Defaults.readSpeedPercent()
         speedSlider.integerValue = speed
         speedValue.stringValue = "\(speed)%"
+        hudCheckbox.state = Defaults.readShowHud() ? .on : .off
     }
 
     @objc private func speedChanged(_ sender: NSSlider) {
@@ -123,7 +134,8 @@ final class ConfigureSheetController: NSObject, NSWindowDelegate {
         owner?.commitConfiguration(
             formula: formula,
             palette: palette,
-            speed: speedSlider.integerValue
+            speed: speedSlider.integerValue,
+            showHud: hudCheckbox.state == .on
         )
         endSheet()
     }
