@@ -1,0 +1,374 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0FCD9712AED90A328D15EDDD /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CA03FE0A9BE0170C9390565 /* MetalKit.framework */; };
+		15FCE256753D3569A0068F7A /* Defaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = F75D5B0EC7616D8D458DEB61 /* Defaults.swift */; };
+		175D0F3635FBFB8B32C0B03B /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D4CE6472489FF085EC3BC9 /* Renderer.swift */; };
+		50DFC79478F5959DCD4F9344 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = DF83577C358BAE02A06E13D3 /* Shaders.metal */; };
+		5BA3840FD2C7EC1BB9346A20 /* ScreenSaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4E250F80F43B0CCE03FD753 /* ScreenSaver.framework */; };
+		89231C94002B2785F15FB977 /* ConfigureSheetController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA5413927C2CF16BFBA8744 /* ConfigureSheetController.swift */; };
+		8F017F1F52B2431EB66B70F8 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98EC738636143CD967BE4819 /* Cocoa.framework */; };
+		9623D5AFB40161FC9148B485 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30416C3DFB96818267198DEB /* Metal.framework */; };
+		98ADCDF813374F0F862EE1EE /* MetalDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78DDEB1A9F3440A42F8C68C /* MetalDevicePicker.swift */; };
+		9C9D3BD8F67E4D5F71A5F265 /* MandelSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67A153F886C0C363E25A4CF6 /* MandelSaverView.swift */; };
+		EF9A4B97410C0CBCA52CF1D3 /* Formula.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716A70618D97135579D197C9 /* Formula.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		30416C3DFB96818267198DEB /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		3E43B20DEDA95383D221CA5D /* MandelSaver.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MandelSaver.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CA03FE0A9BE0170C9390565 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		67A153F886C0C363E25A4CF6 /* MandelSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MandelSaverView.swift; sourceTree = "<group>"; };
+		716A70618D97135579D197C9 /* Formula.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formula.swift; sourceTree = "<group>"; };
+		98EC738636143CD967BE4819 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		99D4CE6472489FF085EC3BC9 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		ADA5413927C2CF16BFBA8744 /* ConfigureSheetController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigureSheetController.swift; sourceTree = "<group>"; };
+		C4E250F80F43B0CCE03FD753 /* ScreenSaver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenSaver.framework; path = System/Library/Frameworks/ScreenSaver.framework; sourceTree = SDKROOT; };
+		DF83577C358BAE02A06E13D3 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		E9CB6652901F6ACF78E55D52 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F75D5B0EC7616D8D458DEB61 /* Defaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Defaults.swift; sourceTree = "<group>"; };
+		F78DDEB1A9F3440A42F8C68C /* MetalDevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalDevicePicker.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		28E3E969D006F73334F8AD3C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5BA3840FD2C7EC1BB9346A20 /* ScreenSaver.framework in Frameworks */,
+				9623D5AFB40161FC9148B485 /* Metal.framework in Frameworks */,
+				0FCD9712AED90A328D15EDDD /* MetalKit.framework in Frameworks */,
+				8F017F1F52B2431EB66B70F8 /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		114827FF452C401510D80271 = {
+			isa = PBXGroup;
+			children = (
+				1C29C17BC32CD9F770BB1026 /* Shaders */,
+				E943EDCF333885631DA3AB2E /* Sources */,
+				6B9F01ACDB644C8B7CAD520A /* Frameworks */,
+				F657264273F2A83884936925 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1C29C17BC32CD9F770BB1026 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				DF83577C358BAE02A06E13D3 /* Shaders.metal */,
+			);
+			path = Shaders;
+			sourceTree = "<group>";
+		};
+		6B9F01ACDB644C8B7CAD520A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				98EC738636143CD967BE4819 /* Cocoa.framework */,
+				30416C3DFB96818267198DEB /* Metal.framework */,
+				4CA03FE0A9BE0170C9390565 /* MetalKit.framework */,
+				C4E250F80F43B0CCE03FD753 /* ScreenSaver.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E943EDCF333885631DA3AB2E /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				ADA5413927C2CF16BFBA8744 /* ConfigureSheetController.swift */,
+				F75D5B0EC7616D8D458DEB61 /* Defaults.swift */,
+				716A70618D97135579D197C9 /* Formula.swift */,
+				E9CB6652901F6ACF78E55D52 /* Info.plist */,
+				67A153F886C0C363E25A4CF6 /* MandelSaverView.swift */,
+				F78DDEB1A9F3440A42F8C68C /* MetalDevicePicker.swift */,
+				99D4CE6472489FF085EC3BC9 /* Renderer.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		F657264273F2A83884936925 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E43B20DEDA95383D221CA5D /* MandelSaver.bundle */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C3821F3C8CBDFB47391E8BD3 /* MandelSaver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 56B3AC0ABB1FD1574EE45C29 /* Build configuration list for PBXNativeTarget "MandelSaver" */;
+			buildPhases = (
+				843064B80FD365C9DE7E4EA8 /* Sources */,
+				28E3E969D006F73334F8AD3C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MandelSaver;
+			packageProductDependencies = (
+			);
+			productName = MandelSaver;
+			productReference = 3E43B20DEDA95383D221CA5D /* MandelSaver.bundle */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0BC37961EEEDAC58F41AA85F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					C3821F3C8CBDFB47391E8BD3 = {
+						DevelopmentTeam = YOUR_TEAM_ID;
+					};
+				};
+			};
+			buildConfigurationList = 05241376968165B10421672B /* Build configuration list for PBXProject "MandelSaver" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 114827FF452C401510D80271;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F657264273F2A83884936925 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C3821F3C8CBDFB47391E8BD3 /* MandelSaver */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		843064B80FD365C9DE7E4EA8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				89231C94002B2785F15FB977 /* ConfigureSheetController.swift in Sources */,
+				15FCE256753D3569A0068F7A /* Defaults.swift in Sources */,
+				EF9A4B97410C0CBCA52CF1D3 /* Formula.swift in Sources */,
+				9C9D3BD8F67E4D5F71A5F265 /* MandelSaverView.swift in Sources */,
+				98ADCDF813374F0F862EE1EE /* MetalDevicePicker.swift in Sources */,
+				175D0F3635FBFB8B32C0B03B /* Renderer.swift in Sources */,
+				50DFC79478F5959DCD4F9344 /* Shaders.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1267E4C4E179AF0A320E3F86 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = de.r8lle.screensaver.mandel;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Release;
+		};
+		52289F14EF69157207BB241F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YOUR_TEAM_ID;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		84E343BC327948DC2DBE6A1C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = YOUR_TEAM_ID;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F5D7CC0BD81502C4931F36B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = de.r8lle.screensaver.mandel;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		05241376968165B10421672B /* Build configuration list for PBXProject "MandelSaver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				84E343BC327948DC2DBE6A1C /* Debug */,
+				52289F14EF69157207BB241F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		56B3AC0ABB1FD1574EE45C29 /* Build configuration list for PBXNativeTarget "MandelSaver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5D7CC0BD81502C4931F36B8 /* Debug */,
+				1267E4C4E179AF0A320E3F86 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0BC37961EEEDAC58F41AA85F /* Project object */;
+}
