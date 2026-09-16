@@ -1,3 +1,4 @@
+import AppKit
 import Metal
 import MetalKit
 import QuartzCore
@@ -53,15 +54,22 @@ final class Renderer: NSObject, MTKViewDelegate {
     private let fractalPipeline: MTLRenderPipelineState
     private let taaPipeline: MTLRenderPipelineState
     private let blitPipeline: MTLRenderPipelineState
+    private let hudPipeline: MTLRenderPipelineState?
     private let sampler: MTLSamplerState
     private var uniformBuffer: MTLBuffer
     private var taaUniformBuffer: MTLBuffer
     private var orbitBuffer: MTLBuffer
+    private var hudRectBuffer: MTLBuffer?
 
     private var freshTexture: MTLTexture?
     private var historyA: MTLTexture?
     private var historyB: MTLTexture?
     private var writeHistoryA = true
+    private var hudTexture: MTLTexture?
+    private var hudDrawnText = ""
+    private var lastHudRaster: CFTimeInterval = 0
+    private var showHud = Defaults.defaultShowHud
+    private var staleProbeBusy = false
 
     private let isPreview: Bool
     private var formula: FractalFormula = MandelbrotFormula()
@@ -76,6 +84,9 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var speedPercent = Defaults.defaultSpeed
     private var frameIndex: UInt32 = 0
     private var interiorSince: CFTimeInterval = 0
+    private var lastStaleCheck: CFTimeInterval = 0
+    private var lastStaleSignature: [Int8] = []
+    private var lastStaleScale: Double = 0
 
     init?(mtkView: MTKView, isPreview: Bool) {
         guard let device = mtkView.device else { return nil }
@@ -109,6 +120,29 @@ final class Renderer: NSObject, MTKViewDelegate {
         blitDesc.fragmentFunction = blitFS
         blitDesc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
 
+        // HUD is optional — never block fractal init if overlay shaders fail.
+        var builtHud: MTLRenderPipelineState?
+        if let hudVS = library.makeFunction(name: "hud_vs"),
+           let hudFS = library.makeFunction(name: "hud_fs") {
+            let hudDesc = MTLRenderPipelineDescriptor()
+            hudDesc.vertexFunction = hudVS
+            hudDesc.fragmentFunction = hudFS
+            hudDesc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
+            if let att = hudDesc.colorAttachments[0] {
+                att.isBlendingEnabled = true
+                att.rgbBlendOperation = .add
+                att.alphaBlendOperation = .add
+                att.sourceRGBBlendFactor = .sourceAlpha
+                att.destinationRGBBlendFactor = .oneMinusSourceAlpha
+                att.sourceAlphaBlendFactor = .one
+                att.destinationAlphaBlendFactor = .oneMinusSourceAlpha
+            }
+            builtHud = try? device.makeRenderPipelineState(descriptor: hudDesc)
+        }
+        if builtHud == nil {
+            NSLog("[FractalSaver] HUD pipeline unavailable — fps overlay disabled")
+        }
+
         let sampDesc = MTLSamplerDescriptor()
         sampDesc.minFilter = .linear
         sampDesc.magFilter = .linear
@@ -120,8 +154,12 @@ final class Renderer: NSObject, MTKViewDelegate {
               let taaPipeline = try? device.makeRenderPipelineState(descriptor: taaDesc),
               let blitPipeline = try? device.makeRenderPipelineState(descriptor: blitDesc),
               let sampler = device.makeSamplerState(descriptor: sampDesc),
-              let uniforms = device.makeBuffer(length: MemoryLayout<Uniforms>.stride, options: .storageModeShared),
-              let taaUniforms = device.makeBuffer(length: MemoryLayout<TAAUniforms>.stride, options: .storageModeShared),
+              let uniforms = device.makeBuffer(
+                length: MemoryLayout<Uniforms>.stride, options: .storageModeShared
+              ),
+              let taaUniforms = device.makeBuffer(
+                length: MemoryLayout<TAAUniforms>.stride, options: .storageModeShared
+              ),
               let orbit = device.makeBuffer(length: orbitBytes, options: .storageModeShared) else {
             NSLog("[FractalSaver] pipeline state failed")
             return nil
@@ -132,21 +170,37 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.fractalPipeline = fractalPipeline
         self.taaPipeline = taaPipeline
         self.blitPipeline = blitPipeline
+        self.hudPipeline = builtHud
         self.sampler = sampler
         self.uniformBuffer = uniforms
         self.taaUniformBuffer = taaUniforms
         self.orbitBuffer = orbit
+        self.hudRectBuffer = builtHud == nil
+            ? nil
+            : device.makeBuffer(
+                length: MemoryLayout<SIMD4<Float>>.stride, options: .storageModeShared
+            )
         self.isPreview = isPreview
         super.init()
         reloadPreferences()
         pickRandomTarget(avoiding: nil)
         lastTargetIndex = targetIndex
         scale = formula.tuning.overviewScale
+        if showHud {
+            hudTexture = Self.makePlaceholderHudTexture(device: device)
+        }
     }
 
     func reloadPreferences() {
         palette = Defaults.paletteIndex(for: Defaults.readPalette())
         speedPercent = Defaults.readSpeedPercent()
+        showHud = Defaults.readShowHud()
+        if !showHud {
+            hudTexture = nil
+            hudDrawnText = ""
+        } else if hudTexture == nil {
+            hudTexture = Self.makePlaceholderHudTexture(device: device)
+        }
         let next = FormulaCatalog.named(Defaults.readFormula())
         if next.id != formula.id {
             formula = next
@@ -156,7 +210,7 @@ final class Renderer: NSObject, MTKViewDelegate {
             lastScale = 0
             fadingOut = false
             fade = 1
-            interiorSince = 0
+            resetStaleTracking()
         } else {
             formula = next
         }
@@ -180,7 +234,6 @@ final class Renderer: NSObject, MTKViewDelegate {
         targetIndex = next
     }
 
-    /// Start a new zoom path at overview (used when the saver animation begins).
     /// Current formula/path label for the on-screen HUD.
     var hudStatus: (formula: String, path: String) {
         statsLock.lock()
@@ -195,7 +248,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         lastScale = 0
         fadingOut = false
         fade = 1
-        interiorSince = 0
+        resetStaleTracking()
         lastTime = 0
     }
 
@@ -254,7 +307,24 @@ final class Renderer: NSObject, MTKViewDelegate {
         gpuSecondsInWindow = 0
         gpuSamplesInWindow = 0
         statsWindowStart = now
-        DispatchQueue.main.async {
+
+        var text = String(format: "%.1f fps", fps)
+        if gpuMs >= 0.5 {
+            text += String(format: "  ·  GPU %.0f ms", gpuMs)
+        }
+        if droppedPerSec >= 0.5 {
+            text += String(format: "  ·  −%.0f dropped/s", droppedPerSec)
+        }
+        if !formulaName.isEmpty {
+            text += "  ·  \(formulaName)"
+            if !pathName.isEmpty {
+                text += " · \(pathName)"
+            }
+        }
+        let hudLine = text
+
+        DispatchQueue.main.async { [weak self] in
+            self?.updateHudTexture(text: hudLine, force: false)
             NotificationCenter.default.post(
                 name: Renderer.statsNotification,
                 object: nil,
@@ -305,11 +375,12 @@ final class Renderer: NSObject, MTKViewDelegate {
         statusFormula = formula.displayName
         statusPath = target.name
         statsLock.unlock()
+
         let cap = formula.tuning.maxIterCap
         let rawIters = 120.0 + max(0, -log10(max(scale, 1e-12))) * 75.0
         let iters = UInt32(min(cap, max(80, Int(rawIters))))
         let refLen = fillOrbit(target: target, maxIter: Int(iters))
-        updateInteriorFade(
+        scheduleStaleCheck(
             now: now,
             target: target,
             aspect: drawableSize.width / drawableSize.height,
@@ -397,6 +468,28 @@ final class Renderer: NSObject, MTKViewDelegate {
         screenEnc.setFragmentTexture(histWrite, index: 0)
         screenEnc.setFragmentSamplerState(sampler, index: 0)
         screenEnc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+
+        if showHud, let hudPipeline, let hudRectBuffer, let hudTexture {
+            let dw = Float(drawableSize.width)
+            let dh = Float(drawableSize.height)
+            // On-screen size is a fraction of the frame — NOT texture pixel size
+            // (drawable is upscaled to the display, so 1:1 texture px looks huge).
+            let th = dh * (isPreview ? 0.04 : 0.02)
+            let aspect = Float(hudTexture.width) / max(Float(hudTexture.height), 1)
+            let tw = min(th * aspect, dw * 0.92)
+            let pad = dh * 0.01
+            let x0 = -1 + 2 * pad / dw
+            let y1 = 1 - 2 * pad / dh
+            let x1 = x0 + 2 * tw / dw
+            let y0 = y1 - 2 * th / dh
+            var rect = SIMD4<Float>(x0, y0, x1, y1)
+            memcpy(hudRectBuffer.contents(), &rect, MemoryLayout<SIMD4<Float>>.stride)
+            screenEnc.setRenderPipelineState(hudPipeline)
+            screenEnc.setVertexBuffer(hudRectBuffer, offset: 0, index: 0)
+            screenEnc.setFragmentTexture(hudTexture, index: 0)
+            screenEnc.setFragmentSamplerState(sampler, index: 0)
+            screenEnc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
+        }
         screenEnc.endEncoding()
 
         cmd.present(drawable)
@@ -407,6 +500,117 @@ final class Renderer: NSObject, MTKViewDelegate {
         lastScale = scale
         lastTargetIndex = targetIndex
         frameIndex &+= 1
+    }
+
+    private func updateHudTexture(text: String, force: Bool) {
+        guard showHud, hudPipeline != nil else { return }
+        let now = CACurrentMediaTime()
+        if !force {
+            guard text != hudDrawnText else { return }
+        }
+        guard let newTexture = Self.makeHudTexture(
+            device: device,
+            text: text,
+            preview: isPreview
+        ) else {
+            return
+        }
+        hudTexture = newTexture
+        hudDrawnText = text
+        lastHudRaster = now
+    }
+
+    private static func makePlaceholderHudTexture(device: MTLDevice) -> MTLTexture? {
+        let width = 8
+        let height = 8
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        for i in stride(from: 0, to: pixels.count, by: 4) {
+            pixels[i] = 0
+            pixels[i + 1] = 0
+            pixels[i + 2] = 0
+            pixels[i + 3] = 180
+        }
+        return uploadHudTexture(device: device, width: width, height: height, pixels: &pixels)
+    }
+
+    private static func makeHudTexture(
+        device: MTLDevice,
+        text: String,
+        preview: Bool
+    ) -> MTLTexture? {
+        let fontSize: CGFloat = preview ? 13 : 16
+        let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .medium)
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.white,
+        ]
+        let attributed = NSAttributedString(string: " \(text) ", attributes: attrs)
+        let textSize = attributed.size()
+        let padX: CGFloat = preview ? 6 : 8
+        let padY: CGFloat = preview ? 3 : 4
+        let width = max(32, Int(ceil(textSize.width + padX * 2)))
+        let height = max(16, Int(ceil(textSize.height + padY * 2)))
+        var pixels = [UInt8](repeating: 0, count: height * width * 4)
+        let bytesPerRow = width * 4
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: &pixels,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return nil
+        }
+
+        ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: 0.75)
+        ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        ctx.saveGState()
+        ctx.translateBy(x: 0, y: CGFloat(height))
+        ctx.scaleBy(x: 1, y: -1)
+        let nsCtx = NSGraphicsContext(cgContext: ctx, flipped: true)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = nsCtx
+        attributed.draw(at: NSPoint(x: padX, y: padY))
+        NSGraphicsContext.restoreGraphicsState()
+        ctx.restoreGState()
+
+        return uploadHudTexture(device: device, width: width, height: height, pixels: &pixels)
+    }
+
+    private static func uploadHudTexture(
+        device: MTLDevice,
+        width: Int,
+        height: Int,
+        pixels: inout [UInt8]
+    ) -> MTLTexture? {
+        let bytesPerRow = width * 4
+        func make(_ mode: MTLStorageMode) -> MTLTexture? {
+            let desc = MTLTextureDescriptor.texture2DDescriptor(
+                pixelFormat: .rgba8Unorm,
+                width: width,
+                height: height,
+                mipmapped: false
+            )
+            desc.usage = [.shaderRead]
+            desc.storageMode = mode
+            guard let texture = device.makeTexture(descriptor: desc) else { return nil }
+            pixels.withUnsafeBytes { raw in
+                guard let base = raw.baseAddress else { return }
+                texture.replace(
+                    region: MTLRegionMake2D(0, 0, width, height),
+                    mipmapLevel: 0,
+                    withBytes: base,
+                    bytesPerRow: bytesPerRow
+                )
+            }
+            return texture
+        }
+        // Managed is the portable CPU-write path on discrete macOS GPUs.
+        return make(.managed) ?? make(.shared)
     }
 
     /// 4-frame phase of a 4×4 pixel lattice (cell 0.25 px). Combined with the
@@ -472,7 +676,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                 fadingOut = false
                 fade = 1
                 lastScale = 0
-                interiorSince = 0
+                resetStaleTracking()
             }
             return
         }
@@ -486,35 +690,98 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
     }
 
-    private func updateInteriorFade(now: CFTimeInterval, target: ZoomTarget, aspect: Double, maxIter: Int) {
-        guard !fadingOut, scale < 0.03 else {
-            interiorSince = 0
-            return
-        }
-        if viewLooksBlack(target: target, aspect: aspect, maxIter: maxIter) {
-            if interiorSince == 0 { interiorSince = now }
-            if now - interiorSince >= 0.7 {
-                fadingOut = true
-            }
-        } else {
-            interiorSince = 0
-        }
+    private func resetStaleTracking() {
+        interiorSince = 0
+        lastStaleCheck = 0
+        lastStaleSignature = []
+        lastStaleScale = 0
+        staleProbeBusy = false
     }
 
-    /// Only the inner ~35% of the view. Full-frame 5×5 aborted early: the
-    /// main bulbs sit on the corners while filaments in the middle still live.
-    private func viewLooksBlack(target: ZoomTarget, aspect: Double, maxIter: Int) -> Bool {
-        let hx = scale * aspect * 0.35
-        let hy = scale * 0.35
-        for gy in 0..<3 {
-            for gx in 0..<3 {
-                let u = Double(gx) - 1.0
-                let v = Double(gy) - 1.0
-                if formula.escapes(offset: SIMD2(u * hx, v * hy), target: target, maxIter: maxIter) {
-                    return false
+    /// Runs off the draw thread so deep-zoom probes cannot steal frame time.
+    private func scheduleStaleCheck(
+        now: CFTimeInterval,
+        target: ZoomTarget,
+        aspect: Double,
+        maxIter: Int
+    ) {
+        guard !fadingOut else { return }
+        guard scale < 0.05 else {
+            interiorSince = 0
+            lastStaleSignature = []
+            lastStaleScale = 0
+            return
+        }
+        guard !staleProbeBusy, now - lastStaleCheck >= 0.4 else { return }
+        lastStaleCheck = now
+        staleProbeBusy = true
+
+        let probeScale = scale
+        let probeAspect = aspect
+        let probeIters = min(48, maxIter)
+        let probeTarget = target
+        let formula = self.formula
+        let prevSignature = lastStaleSignature
+        let prevScale = lastStaleScale
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let hx = probeScale * probeAspect * 0.45
+            let hy = probeScale * 0.45
+            let grid = 3
+            let denom = Double(grid - 1)
+            let bucketScale = max(probeIters, 1)
+            var signature = [Int8]()
+            signature.reserveCapacity(grid * grid)
+            var bins = Set<Int>()
+            var escapeIters: [Int] = []
+
+            for gy in 0..<grid {
+                for gx in 0..<grid {
+                    let u = Double(gx) / denom * 2.0 - 1.0
+                    let v = Double(gy) / denom * 2.0 - 1.0
+                    if let iter = formula.escapeIteration(
+                        offset: SIMD2(u * hx, v * hy),
+                        target: probeTarget,
+                        maxIter: probeIters
+                    ) {
+                        let bin = min(7, iter * 8 / bucketScale)
+                        bins.insert(bin)
+                        escapeIters.append(iter)
+                        signature.append(Int8(bin))
+                    } else {
+                        signature.append(-1)
+                    }
+                }
+            }
+
+            var isFlat = escapeIters.isEmpty || bins.count <= 2
+            if !isFlat, let lo = escapeIters.min(), let hi = escapeIters.max() {
+                let mean = Double(escapeIters.reduce(0, +)) / Double(escapeIters.count)
+                isFlat = Double(hi - lo) <= max(10.0, mean * 0.2)
+            }
+            let scaleMoved = prevScale <= 0 || prevScale / probeScale >= 1.12
+            let sameLook = !prevSignature.isEmpty
+                && prevSignature.count == signature.count
+                && zip(prevSignature, signature).filter { $0 != $1 }.count <= 2
+            let stagnant = isFlat || (scaleMoved && sameLook)
+
+            DispatchQueue.main.async {
+                guard let self, !self.fadingOut else { return }
+                self.staleProbeBusy = false
+                if scaleMoved {
+                    self.lastStaleSignature = signature
+                    self.lastStaleScale = probeScale
+                }
+                if stagnant {
+                    let t = CACurrentMediaTime()
+                    if self.interiorSince == 0 { self.interiorSince = t }
+                    if t - self.interiorSince >= 0.75 {
+                        self.fadingOut = true
+                    }
+                } else {
+                    self.interiorSince = 0
                 }
             }
         }
-        return true
     }
 }

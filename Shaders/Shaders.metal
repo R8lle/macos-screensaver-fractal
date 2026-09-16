@@ -230,3 +230,33 @@ fragment float4 blit_fs(BlitOut in [[stage_in]],
                         sampler smp [[sampler(0)]]) {
     return src.sample(smp, in.uv);
 }
+
+// HUD overlay: axis-aligned textured quad (rect in NDC: x0,y0,x1,y1).
+struct HudOut {
+    float4 position [[position]];
+    float2 uv;
+};
+
+vertex HudOut hud_vs(uint vid [[vertex_id]],
+                     constant float4 &rect [[buffer(0)]]) {
+    float2 corners[6] = {
+        float2(0.0, 0.0), float2(1.0, 0.0), float2(0.0, 1.0),
+        float2(0.0, 1.0), float2(1.0, 0.0), float2(1.0, 1.0)
+    };
+    float2 c = corners[vid];
+    float2 pos = float2(mix(rect.x, rect.z, c.x), mix(rect.y, rect.w, c.y));
+    float2 uvs[6] = {
+        float2(0.0, 1.0), float2(1.0, 1.0), float2(0.0, 0.0),
+        float2(0.0, 0.0), float2(1.0, 1.0), float2(1.0, 0.0)
+    };
+    HudOut out;
+    out.position = float4(pos, 0.0, 1.0);
+    out.uv = uvs[vid];
+    return out;
+}
+
+fragment float4 hud_fs(HudOut in [[stage_in]],
+                       texture2d<float> tex [[texture(0)]],
+                       sampler smp [[sampler(0)]]) {
+    return tex.sample(smp, in.uv);
+}

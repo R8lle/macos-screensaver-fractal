@@ -12,6 +12,8 @@
 	<string>6.0</string>
 	<key>CFBundleDisplayName</key>
 	<string>Fractal</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleName</key>
 	<string>Fractal</string>
 	<key>CFBundlePackageType</key>
@@ -22,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSPrincipalClass</key>
 	<string>FractalSaverView</string>
+	<key>ScreenSaverThumbnail</key>
+	<string>thumbnail</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>R8lle</string>
 </dict>

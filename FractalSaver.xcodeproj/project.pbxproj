@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2D18111FB7F845DEDC92D582 /* thumbnail.png in Resources */ = {isa = PBXBuildFile; fileRef = EDB264531B9A64927BFD51CA /* thumbnail.png */; };
 		4DC5492F579264B91BD8258E /* Formula.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA38C37D4057E55AC863FECA /* Formula.swift */; };
 		6E827BEC35E245858A39C8DB /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 785391AFEDB4B8402FB1049A /* MetalKit.framework */; };
 		75078BAC531B40B8EC842E95 /* ConfigureSheetController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5182EF5EAAC55CF42BD8D8B5 /* ConfigureSheetController.swift */; };
@@ -14,10 +15,13 @@
 		9EEF745F080DDB75835B0A04 /* FractalSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59543CA5D645C673BCF8590 /* FractalSaverView.swift */; };
 		A27C878096E7B0E40096E241 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDD20DF95CFE911880DBACEB /* Renderer.swift */; };
 		A5E815D9F9305784089A79D7 /* MetalDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DCC76F4644DC2270E6E5802 /* MetalDevicePicker.swift */; };
+		AFFDAF483AD7C35EB1928BC5 /* thumbnail@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C618B5FA564AFFBA06EA8777 /* thumbnail@2x.png */; };
+		BC4578F978AF1BBF7DFE6E7A /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = F6A066EAA6BEB8B768600BB5 /* AppIcon.icns */; };
 		C399ED542A52B67AEDEBFA1D /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D95DB06C8D3B471D63DDCC1B /* Metal.framework */; };
 		D08F6D4668B8DA08E010B406 /* ScreenSaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 040C03ADC4F4F93E228312C6 /* ScreenSaver.framework */; };
 		D0E7ED762A931E73D4AC228D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60FBB0623D562969111197AA /* Cocoa.framework */; };
 		DCA53BBD63252B921DB96490 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 610226012CCA102681CE9867 /* Shaders.metal */; };
+		FDFB7269B9CA2D95FDD947B1 /* thumbnail.tiff in Resources */ = {isa = PBXBuildFile; fileRef = C356835138C70770093C5926 /* thumbnail.tiff */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,9 +35,13 @@
 		785391AFEDB4B8402FB1049A /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		9FC593DB4CA97905E221939C /* Defaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Defaults.swift; sourceTree = "<group>"; };
 		AA38C37D4057E55AC863FECA /* Formula.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formula.swift; sourceTree = "<group>"; };
+		C356835138C70770093C5926 /* thumbnail.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = thumbnail.tiff; sourceTree = "<group>"; };
 		C59543CA5D645C673BCF8590 /* FractalSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractalSaverView.swift; sourceTree = "<group>"; };
+		C618B5FA564AFFBA06EA8777 /* thumbnail@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "thumbnail@2x.png"; sourceTree = "<group>"; };
 		CDD20DF95CFE911880DBACEB /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		D95DB06C8D3B471D63DDCC1B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		EDB264531B9A64927BFD51CA /* thumbnail.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = thumbnail.png; sourceTree = "<group>"; };
+		F6A066EAA6BEB8B768600BB5 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,11 +62,23 @@
 		07789647CC6023C69995D05A = {
 			isa = PBXGroup;
 			children = (
+				18681894CFB842F370AA0716 /* Resources */,
 				E4B6FA7CAA17E3B86CE68355 /* Shaders */,
 				CD89540DE6192DB2028652EA /* Sources */,
 				1C436AEAEF61AA410DDA9C07 /* Frameworks */,
 				3E3B9E7D6CA23FB99F3DB6EB /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		18681894CFB842F370AA0716 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				F6A066EAA6BEB8B768600BB5 /* AppIcon.icns */,
+				EDB264531B9A64927BFD51CA /* thumbnail.png */,
+				C356835138C70770093C5926 /* thumbnail.tiff */,
+				C618B5FA564AFFBA06EA8777 /* thumbnail@2x.png */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		1C436AEAEF61AA410DDA9C07 /* Frameworks */ = {
@@ -110,6 +130,7 @@
 			buildConfigurationList = B12D90D184E38074BAF3761A /* Build configuration list for PBXNativeTarget "FractalSaver" */;
 			buildPhases = (
 				767D545CCED2013BDB6F1E1F /* Sources */,
+				CE04245D2672D5AA7918C16F /* Resources */,
 				87F1BDDC484A072793A9ECD3 /* Frameworks */,
 			);
 			buildRules = (
@@ -156,6 +177,20 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		CE04245D2672D5AA7918C16F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC4578F978AF1BBF7DFE6E7A /* AppIcon.icns in Resources */,
+				2D18111FB7F845DEDC92D582 /* thumbnail.png in Resources */,
+				FDFB7269B9CA2D95FDD947B1 /* thumbnail.tiff in Resources */,
+				AFFDAF483AD7C35EB1928BC5 /* thumbnail@2x.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		767D545CCED2013BDB6F1E1F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -178,7 +213,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -267,7 +302,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;

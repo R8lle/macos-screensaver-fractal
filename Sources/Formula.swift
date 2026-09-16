@@ -50,8 +50,17 @@ protocol FractalFormula {
         capacity: Int
     ) -> Int
 
+    /// Escape iteration count, or `nil` if still bounded after maxIter (interior).
+    func escapeIteration(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Int?
+
     /// True if this view-offset from the zoom center escapes (not interior).
     func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool
+}
+
+extension FractalFormula {
+    func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool {
+        escapeIteration(offset: offset, target: target, maxIter: maxIter) != nil
+    }
 }
 
 enum FormulaCatalog {
@@ -128,16 +137,16 @@ struct MandelbrotFormula: FractalFormula {
         return count
     }
 
-    func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool {
+    func escapeIteration(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Int? {
         let c = target.center + offset
         var z = SIMD2<Double>(repeating: 0)
-        for _ in 0..<maxIter {
-            if z.x * z.x + z.y * z.y > 256 { return true }
+        for i in 0..<maxIter {
+            if z.x * z.x + z.y * z.y > 256 { return i }
             let x = z.x * z.x - z.y * z.y + c.x
             let y = 2 * z.x * z.y + c.y
             z = SIMD2(x, y)
         }
-        return false
+        return nil
     }
 }
 
@@ -181,16 +190,16 @@ struct JuliaFormula: FractalFormula {
         return count
     }
 
-    func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool {
+    func escapeIteration(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Int? {
         var z = target.center + offset
         let c = target.parameter
-        for _ in 0..<maxIter {
-            if z.x * z.x + z.y * z.y > 256 { return true }
+        for i in 0..<maxIter {
+            if z.x * z.x + z.y * z.y > 256 { return i }
             let x = z.x * z.x - z.y * z.y + c.x
             let y = 2 * z.x * z.y + c.y
             z = SIMD2(x, y)
         }
-        return false
+        return nil
     }
 }
 
@@ -235,16 +244,16 @@ struct BurningShipFormula: FractalFormula {
         return count
     }
 
-    func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool {
+    func escapeIteration(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Int? {
         let c = target.center + offset
         var z = SIMD2<Double>(repeating: 0)
-        for _ in 0..<maxIter {
-            if z.x * z.x + z.y * z.y > 256 { return true }
+        for i in 0..<maxIter {
+            if z.x * z.x + z.y * z.y > 256 { return i }
             let ax = abs(z.x)
             let ay = abs(z.y)
             z = SIMD2(ax * ax - ay * ay + c.x, 2 * ax * ay + c.y)
         }
-        return false
+        return nil
     }
 }
 
@@ -287,16 +296,16 @@ struct TricornFormula: FractalFormula {
         return count
     }
 
-    func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool {
+    func escapeIteration(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Int? {
         let c = target.center + offset
         var z = SIMD2<Double>(repeating: 0)
-        for _ in 0..<maxIter {
-            if z.x * z.x + z.y * z.y > 256 { return true }
+        for i in 0..<maxIter {
+            if z.x * z.x + z.y * z.y > 256 { return i }
             let x = z.x * z.x - z.y * z.y + c.x
             let y = -2 * z.x * z.y + c.y
             z = SIMD2(x, y)
         }
-        return false
+        return nil
     }
 }
 
@@ -338,15 +347,15 @@ struct BurningShipJuliaFormula: FractalFormula {
         return count
     }
 
-    func escapes(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Bool {
+    func escapeIteration(offset: SIMD2<Double>, target: ZoomTarget, maxIter: Int) -> Int? {
         var z = target.center + offset
         let c = target.parameter
-        for _ in 0..<maxIter {
-            if z.x * z.x + z.y * z.y > 256 { return true }
+        for i in 0..<maxIter {
+            if z.x * z.x + z.y * z.y > 256 { return i }
             let ax = abs(z.x)
             let ay = abs(z.y)
             z = SIMD2(ax * ax - ay * ay + c.x, 2 * ax * ay + c.y)
         }
-        return false
+        return nil
     }
 }
