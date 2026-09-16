@@ -19,7 +19,7 @@ final class ConfigureSheetController: NSObject, NSWindowDelegate {
     init(owner: FractalSaverView?) {
         self.owner = owner
         let width: CGFloat = 420
-        let height: CGFloat = 250
+        let height: CGFloat = 290
 
         let content = FlippedContentView(frame: NSRect(x: 0, y: 0, width: width, height: height))
         let window = NSWindow(
@@ -78,13 +78,27 @@ final class ConfigureSheetController: NSObject, NSWindowDelegate {
         self.hudCheckbox = hudCheckbox
         content.addSubview(hudCheckbox)
 
-        let cancel = NSButton(frame: NSRect(x: 210, y: 190, width: 90, height: 32))
+        let bundle = Bundle(for: FractalSaverView.self)
+        let shortVersion = bundle.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let buildVersion = bundle.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        let buildLabel = label("Build: \(buildVersion) (\(shortVersion))", NSRect(x: 20, y: 172, width: 380, height: 18))
+        buildLabel.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        buildLabel.textColor = .secondaryLabelColor
+        content.addSubview(buildLabel)
+
+        let year = Calendar.current.component(.year, from: Date())
+        let copyrightLabel = label("© \(year) R@lle", NSRect(x: 20, y: 194, width: 380, height: 18))
+        copyrightLabel.font = .systemFont(ofSize: 11)
+        copyrightLabel.textColor = .secondaryLabelColor
+        content.addSubview(copyrightLabel)
+
+        let cancel = NSButton(frame: NSRect(x: 210, y: 230, width: 90, height: 32))
         cancel.title = "Abbrechen"
         cancel.bezelStyle = .rounded
         cancel.keyEquivalent = "\u{1b}"
         content.addSubview(cancel)
 
-        let ok = NSButton(frame: NSRect(x: 310, y: 190, width: 90, height: 32))
+        let ok = NSButton(frame: NSRect(x: 310, y: 230, width: 90, height: 32))
         ok.title = "OK"
         ok.bezelStyle = .rounded
         ok.keyEquivalent = "\r"

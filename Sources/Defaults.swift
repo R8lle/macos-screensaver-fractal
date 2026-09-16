@@ -27,11 +27,15 @@ enum Defaults {
         store.integer(forKey: key)
     }
 
+    /// Sentinel: randomize over all formulas / palettes.
+    static let allId = "all"
+
     // MARK: - Palette
 
     static let paletteKey = "palette"
-    static let defaultPalette = "r8lle"
+    static let defaultPalette = allId
     static let paletteChoices: [(id: String, displayName: String)] = [
+        (allId, "Alle"),
         ("r8lle", "R8lle"),
         ("classic", "Klassisch"),
         ("fire", "Feuer"),
@@ -40,6 +44,7 @@ enum Defaults {
         ("violet", "Violett"),
         ("mono", "Mono"),
     ]
+    private static let concretePalettes = paletteChoices.map(\.id).filter { $0 != allId }
     private static let validPalettes = Set(paletteChoices.map(\.id))
 
     static func paletteIndex(for id: String) -> UInt32 {
@@ -50,7 +55,7 @@ enum Defaults {
         case "gold": return 4
         case "violet": return 5
         case "mono": return 6
-        default: return 0
+        default: return 0 // r8lle
         }
     }
 
@@ -61,26 +66,48 @@ enum Defaults {
         return defaultPalette
     }
 
+    static func isAllPalettes() -> Bool {
+        readPalette() == allId
+    }
+
     static func writePalette(_ palette: String) {
         let resolved = validPalettes.contains(palette) ? palette : defaultPalette
         setValue(resolved, forKey: paletteKey)
     }
 
+    /// Concrete palette id for rendering (never `"all"`).
+    static func randomPaletteId(avoiding: String? = nil) -> String {
+        let pool = concretePalettes
+        guard pool.count > 1, let avoiding, pool.contains(avoiding) else {
+            return pool.randomElement() ?? "r8lle"
+        }
+        var next = pool.randomElement()!
+        if next == avoiding {
+            next = pool.filter { $0 != avoiding }.randomElement() ?? next
+        }
+        return next
+    }
+
     // MARK: - Formula
 
     static let formulaKey = "formula"
-    static let defaultFormula = "mandelbrot"
+    static let defaultFormula = allId
 
     static func readFormula() -> String {
         if let value = string(forKey: formulaKey),
-           FormulaCatalog.all.contains(where: { $0.id == value }) {
+           value == allId || FormulaCatalog.all.contains(where: { $0.id == value }) {
             return value
         }
         return defaultFormula
     }
 
+    static func isAllFormulas() -> Bool {
+        readFormula() == allId
+    }
+
     static func writeFormula(_ formula: String) {
-        let resolved = FormulaCatalog.all.contains(where: { $0.id == formula })
+        let resolved = formula == allId
+            || FormulaCatalog.all.contains(where: { $0.id == formula })
             ? formula
             : defaultFormula
         setValue(resolved, forKey: formulaKey)

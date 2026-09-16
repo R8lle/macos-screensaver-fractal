@@ -73,6 +73,9 @@ final class Renderer: NSObject, MTKViewDelegate {
 
     private let isPreview: Bool
     private var formula: FractalFormula = MandelbrotFormula()
+    private var formulaModeAll = false
+    private var paletteModeAll = false
+    private var activePaletteId = "r8lle"
     private var scale: Double = 1.45
     private var lastScale: Double = 0
     private var targetIndex = 0
@@ -183,6 +186,9 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.isPreview = isPreview
         super.init()
         reloadPreferences()
+        if formulaModeAll {
+            formula = FormulaCatalog.random(avoiding: nil)
+        }
         pickRandomTarget(avoiding: nil)
         lastTargetIndex = targetIndex
         scale = formula.tuning.overviewScale
@@ -192,7 +198,8 @@ final class Renderer: NSObject, MTKViewDelegate {
     }
 
     func reloadPreferences() {
-        palette = Defaults.paletteIndex(for: Defaults.readPalette())
+        formulaModeAll = Defaults.isAllFormulas()
+        paletteModeAll = Defaults.isAllPalettes()
         speedPercent = Defaults.readSpeedPercent()
         showHud = Defaults.readShowHud()
         if !showHud {
@@ -201,19 +208,55 @@ final class Renderer: NSObject, MTKViewDelegate {
         } else if hudTexture == nil {
             hudTexture = Self.makePlaceholderHudTexture(device: device)
         }
-        let next = FormulaCatalog.named(Defaults.readFormula())
-        if next.id != formula.id {
-            formula = next
-            pickRandomTarget(avoiding: nil)
-            lastTargetIndex = targetIndex
-            scale = next.tuning.overviewScale
-            lastScale = 0
-            fadingOut = false
-            fade = 1
-            resetStaleTracking()
+
+        if paletteModeAll {
+            applyPalette(Defaults.randomPaletteId(avoiding: activePaletteId))
         } else {
-            formula = next
+            applyPalette(Defaults.readPalette())
         }
+
+        if formulaModeAll {
+            // Stay on the current formula until the next fade advances.
+        } else {
+            let next = FormulaCatalog.named(Defaults.readFormula())
+            if next.id != formula.id {
+                formula = next
+                pickRandomTarget(avoiding: nil)
+                lastTargetIndex = targetIndex
+                scale = next.tuning.overviewScale
+                lastScale = 0
+                fadingOut = false
+                fade = 1
+                resetStaleTracking()
+            } else {
+                formula = next
+            }
+        }
+    }
+
+    private func applyPalette(_ id: String) {
+        let concrete = id == Defaults.allId ? Defaults.randomPaletteId() : id
+        activePaletteId = concrete
+        palette = Defaults.paletteIndex(for: concrete)
+    }
+
+    /// After a finished zoom fades out: maybe new formula, new path, new palette.
+    private func advanceToNextFractal() {
+        if formulaModeAll {
+            formula = FormulaCatalog.random(avoiding: formula.id)
+            pickRandomTarget(avoiding: nil)
+        } else {
+            pickRandomTarget(avoiding: targetIndex)
+        }
+        if paletteModeAll {
+            applyPalette(Defaults.randomPaletteId(avoiding: activePaletteId))
+        }
+        lastTargetIndex = targetIndex
+        scale = formula.tuning.overviewScale
+        fadingOut = false
+        fade = 1
+        lastScale = 0
+        resetStaleTracking()
     }
 
     /// Random zoom path. Prefer a different target than `avoiding` when possible.
@@ -242,7 +285,13 @@ final class Renderer: NSObject, MTKViewDelegate {
     }
 
     func beginRandomPath() {
+        if formulaModeAll {
+            formula = FormulaCatalog.random(avoiding: formula.id)
+        }
         pickRandomTarget(avoiding: targetIndex)
+        if paletteModeAll {
+            applyPalette(Defaults.randomPaletteId(avoiding: activePaletteId))
+        }
         lastTargetIndex = targetIndex
         scale = formula.tuning.overviewScale
         lastScale = 0
@@ -671,12 +720,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         if fadingOut {
             fade -= dt / Self.fadeSeconds
             if fade <= 0 {
-                pickRandomTarget(avoiding: targetIndex)
-                scale = formula.tuning.overviewScale
-                fadingOut = false
-                fade = 1
-                lastScale = 0
-                resetStaleTracking()
+                advanceToNextFractal()
             }
             return
         }
@@ -718,7 +762,8 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         let probeScale = scale
         let probeAspect = aspect
-        let probeIters = min(48, maxIter)
+        // 48 iters was too coarse for Julia filaments → false "flat" aborts.
+        let probeIters = min(96, maxIter)
         let probeTarget = target
         let formula = self.formula
         let prevSignature = lastStaleSignature
@@ -754,10 +799,20 @@ final class Renderer: NSObject, MTKViewDelegate {
                 }
             }
 
-            var isFlat = escapeIters.isEmpty || bins.count <= 2
-            if !isFlat, let lo = escapeIters.min(), let hi = escapeIters.max() {
-                let mean = Double(escapeIters.reduce(0, +)) / Double(escapeIters.count)
-                isFlat = Double(hi - lo) <= max(10.0, mean * 0.2)
+            // Flat = featureless. Mixed interior+escape is the *boundary* — keep zooming.
+            // All-interior, or all-escape with only one bucket / tiny spread → abort.
+            let interiorCount = signature.filter { $0 < 0 }.count
+            let mixedBoundary = interiorCount > 0 && !escapeIters.isEmpty
+            var isFlat = false
+            if !mixedBoundary {
+                if escapeIters.isEmpty {
+                    isFlat = true // all interior → black
+                } else if bins.count <= 1 {
+                    isFlat = true // uniform exterior wash
+                } else if let lo = escapeIters.min(), let hi = escapeIters.max() {
+                    let mean = Double(escapeIters.reduce(0, +)) / Double(escapeIters.count)
+                    isFlat = Double(hi - lo) <= max(8.0, mean * 0.12)
+                }
             }
             let scaleMoved = prevScale <= 0 || prevScale / probeScale >= 1.12
             let sameLook = !prevSignature.isEmpty
@@ -775,7 +830,8 @@ final class Renderer: NSObject, MTKViewDelegate {
                 if stagnant {
                     let t = CACurrentMediaTime()
                     if self.interiorSince == 0 { self.interiorSince = t }
-                    if t - self.interiorSince >= 0.75 {
+                    // Hold a bit longer so sparse-but-real filaments survive.
+                    if t - self.interiorSince >= 1.2 {
                         self.fadingOut = true
                     }
                 } else {

@@ -47,7 +47,7 @@ targets:
         COMBINE_HIDPI_IMAGES: NO
         MTL_FAST_MATH: NO
         MACOSX_DEPLOYMENT_TARGET: "13.0"
-        CURRENT_PROJECT_VERSION: 4
+        CURRENT_PROJECT_VERSION: 6
         MARKETING_VERSION: "1.0"
         FRAMEWORK_SEARCH_PATHS: "$(inherited)"
     dependencies:

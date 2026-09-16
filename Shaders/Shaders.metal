@@ -37,56 +37,60 @@ static float2 cmul(float2 a, float2 b) {
 }
 
 static float3 paletteColor(uint palette, float mu) {
-    float t = fract(mu * 0.028);
+    float t = fract(mu * 0.032);
+    // Bias toward the bright half of each band — otherwise Feuer/Gold
+    // spend most of the cycle in near-black stops and look muddy on
+    // Julia/Tricorn (large black interiors, thin colored filaments).
+    float s = pow(smoothstep(0.0, 1.0, t), 0.62);
     float3 a, b, c, d;
     switch (palette) {
-        case 1:
-            a = float3(0.05, 0.04, 0.12);
-            b = float3(0.25, 0.35, 0.85);
+        case 1: // Klassisch
+            a = float3(0.08, 0.06, 0.18);
+            b = float3(0.30, 0.40, 0.90);
             c = float3(0.95, 0.85, 0.45);
             d = float3(1.00, 0.98, 0.92);
             break;
-        case 2:
-            a = float3(0.02, 0.00, 0.00);
-            b = float3(0.55, 0.05, 0.00);
-            c = float3(0.95, 0.35, 0.02);
-            d = float3(1.00, 0.92, 0.45);
+        case 2: // Feuer — was too dark (a≈0.02); start at ember red
+            a = float3(0.22, 0.03, 0.00);
+            b = float3(0.90, 0.14, 0.00);
+            c = float3(1.00, 0.55, 0.04);
+            d = float3(1.00, 0.96, 0.55);
             break;
-        case 3:
-            a = float3(0.01, 0.04, 0.10);
-            b = float3(0.05, 0.28, 0.55);
-            c = float3(0.25, 0.75, 0.90);
-            d = float3(0.92, 0.98, 1.00);
+        case 3: // Eis
+            a = float3(0.02, 0.08, 0.16);
+            b = float3(0.08, 0.38, 0.65);
+            c = float3(0.35, 0.82, 0.95);
+            d = float3(0.94, 0.98, 1.00);
             break;
-        case 4:
-            a = float3(0.04, 0.02, 0.00);
-            b = float3(0.45, 0.18, 0.02);
-            c = float3(0.92, 0.62, 0.12);
-            d = float3(1.00, 0.94, 0.70);
+        case 4: // Gold — lift the low stops so Julia filaments read as metal
+            a = float3(0.28, 0.12, 0.01);
+            b = float3(0.78, 0.42, 0.04);
+            c = float3(1.00, 0.78, 0.18);
+            d = float3(1.00, 0.97, 0.78);
             break;
-        case 5:
-            a = float3(0.03, 0.00, 0.06);
-            b = float3(0.28, 0.05, 0.45);
-            c = float3(0.72, 0.22, 0.82);
-            d = float3(0.95, 0.82, 1.00);
+        case 5: // Violett
+            a = float3(0.08, 0.02, 0.14);
+            b = float3(0.38, 0.10, 0.55);
+            c = float3(0.82, 0.32, 0.90);
+            d = float3(0.97, 0.88, 1.00);
             break;
-        case 6:
-            a = float3(0.02, 0.02, 0.025);
-            b = float3(0.18, 0.19, 0.22);
-            c = float3(0.62, 0.64, 0.68);
-            d = float3(0.94, 0.95, 0.97);
+        case 6: // Mono
+            a = float3(0.06, 0.06, 0.07);
+            b = float3(0.28, 0.29, 0.32);
+            c = float3(0.68, 0.70, 0.74);
+            d = float3(0.95, 0.96, 0.98);
             break;
-        default:
-            a = float3(0.02, 0.03, 0.05);
-            b = float3(0.04, 0.28, 0.38);
-            c = float3(0.95, 0.62, 0.18);
-            d = float3(0.70, 0.95, 1.00);
+        default: // R8lle
+            a = float3(0.04, 0.06, 0.10);
+            b = float3(0.06, 0.35, 0.45);
+            c = float3(0.98, 0.68, 0.22);
+            d = float3(0.75, 0.96, 1.00);
             break;
     }
-    float s = smoothstep(0.0, 1.0, t);
     float3 lo = mix(a, b, clamp(s * 2.0, 0.0, 1.0));
     float3 hi = mix(c, d, clamp(s * 2.0 - 1.0, 0.0, 1.0));
-    return mix(lo, hi, smoothstep(0.35, 0.85, s));
+    // Cross into the bright pair earlier (was 0.35…0.85 → mostly dark).
+    return mix(lo, hi, smoothstep(0.18, 0.72, s));
 }
 
 static float3 sampleFractal(constant Uniforms &u, constant float4 *ref, float2 pixel) {

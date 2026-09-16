@@ -73,11 +73,19 @@ enum FormulaCatalog {
     ]
 
     static var choices: [(id: String, displayName: String)] {
-        all.map { ($0.id, $0.displayName) }
+        [(Defaults.allId, "Alle")] + all.map { ($0.id, $0.displayName) }
     }
 
     static func named(_ id: String) -> FractalFormula {
         all.first { $0.id == id } ?? MandelbrotFormula()
+    }
+
+    static func random(avoiding: String? = nil) -> FractalFormula {
+        guard all.count > 1, let avoiding else {
+            return all.randomElement() ?? MandelbrotFormula()
+        }
+        let pool = all.filter { $0.id != avoiding }
+        return pool.randomElement() ?? all.randomElement() ?? MandelbrotFormula()
     }
 }
 
@@ -100,19 +108,21 @@ struct MandelbrotFormula: FractalFormula {
     let displayName = "Mandelbrot"
     let shaderID = FormulaShaderID.mandelbrot
     let tuning = FormulaTuning()
+    // Centers verified against the stale-probe: must stay on set boundary
+    // (mixed interior/escape), not land in solid interior or uniform wash.
     let targets: [ZoomTarget] = [
         ZoomTarget(name: "Seahorse Valley", center: SIMD2(-0.743_643_887_037_151, 0.131_825_904_205_330), minScale: 1.0e-10),
-        ZoomTarget(name: "Seahorse Mouth", center: SIMD2(-0.759_856, 0.125_547), minScale: 2.0e-10),
-        ZoomTarget(name: "Mutated Seahorse", center: SIMD2(-0.733, 0.288), minScale: 2.0e-10),
+        ZoomTarget(name: "Seahorse Mouth", center: SIMD2(-0.711_864_0411, 0.226_413_8912), minScale: 2.0e-10),
+        ZoomTarget(name: "Mutated Seahorse", center: SIMD2(-0.648_942_7095, 0.366_819_8389), minScale: 2.0e-10),
         ZoomTarget(name: "Northern Spire", center: SIMD2(-0.160_701_35, 1.037_566_5), minScale: 2.0e-10),
         ZoomTarget(name: "West Filament", center: SIMD2(-1.250_66, 0.020_12), minScale: 1.5e-10),
-        ZoomTarget(name: "Double Spiral", center: SIMD2(-0.745_3, 0.112_7), minScale: 1.0e-10),
-        ZoomTarget(name: "Upper Bulb Edge", center: SIMD2(-0.113, 0.6449), minScale: 2.0e-10),
+        ZoomTarget(name: "Double Spiral", center: SIMD2(-0.765_750_9872, 0.096_388_1478), minScale: 1.0e-10),
+        ZoomTarget(name: "Upper Bulb Edge", center: SIMD2(-0.218_830_4638, 0.726_373_1482), minScale: 2.0e-10),
         ZoomTarget(name: "Scepter Tip", center: SIMD2(-1.768_778_8, -0.001_738_9), minScale: 1.5e-10),
-        ZoomTarget(name: "Elephant Valley", center: SIMD2(0.282, -0.01), minScale: 2.0e-10),
-        ZoomTarget(name: "Elephant Cusp", center: SIMD2(0.298_33, 0.001_11), minScale: 2.0e-10),
-        ZoomTarget(name: "Feigenbaum", center: SIMD2(-1.401_155, 0.0), minScale: 1.5e-10),
-        ZoomTarget(name: "Period-3 Bulb", center: SIMD2(-0.101_1, 0.956_3), minScale: 2.0e-10),
+        ZoomTarget(name: "Elephant Valley", center: SIMD2(0.328_524_4877, 0.057_326_5652), minScale: 2.0e-10),
+        ZoomTarget(name: "Elephant Cusp", center: SIMD2(0.258_725_7364, -0.001_637_6031), minScale: 2.0e-10),
+        ZoomTarget(name: "Feigenbaum", center: SIMD2(-1.370_427_8092, -0.008_415_9496), minScale: 1.5e-10),
+        ZoomTarget(name: "Period-3 Bulb", center: SIMD2(-0.140_611_0161, 0.858_464_8698), minScale: 2.0e-10),
         ZoomTarget(name: "North Tip", center: SIMD2(0.001_643_721_971_153, 0.822_467_633_298_876), minScale: 1.5e-10),
     ]
 
@@ -155,18 +165,18 @@ struct JuliaFormula: FractalFormula {
     let displayName = "Julia"
     let shaderID = FormulaShaderID.julia
     let tuning = FormulaTuning()
+    // Zoom `center` must sit on the Julia *boundary* (filaments). Many classic
+    // Julia `c` values look great at overview with center (0,0), but (0,0) is
+    // interior / featureless once scale drops — the stale-probe correctly aborts.
     let targets: [ZoomTarget] = [
-        ZoomTarget(name: "Dragon", center: SIMD2(-0.15, 0.15), minScale: 2.0e-10, parameter: SIMD2(-0.8, 0.156)),
-        ZoomTarget(name: "Douady Rabbit", center: SIMD2(-0.2, 0.55), minScale: 2.0e-10, parameter: SIMD2(-0.123, 0.745)),
-        ZoomTarget(name: "Spiral Arms", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(-0.7269, 0.1889)),
-        ZoomTarget(name: "Filament Nest", center: SIMD2(0.35, 0.35), minScale: 2.0e-10, parameter: SIMD2(-0.4, 0.6)),
-        ZoomTarget(name: "Near Circle", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(0.285, 0.01)),
-        ZoomTarget(name: "Galaxy Swirl", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(-0.7, 0.270_15)),
-        ZoomTarget(name: "Siegel Disk", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(-0.390_54, 0.586_79)),
-        ZoomTarget(name: "Basilica", center: SIMD2(0.0, 0.0), minScale: 2.0e-10, parameter: SIMD2(-1.0, 0.0)),
-        ZoomTarget(name: "Dendrite", center: SIMD2(0.0, 0.0), minScale: 2.0e-10, parameter: SIMD2(0.0, 1.0)),
-        ZoomTarget(name: "San Marco", center: SIMD2(0.0, 0.0), minScale: 2.0e-10, parameter: SIMD2(-0.75, 0.0)),
-        ZoomTarget(name: "Airplane", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(-1.755, 0.0)),
+        ZoomTarget(name: "Dragon", center: SIMD2(0.286_365, 0.170_940), minScale: 1.0e-10, parameter: SIMD2(-0.8, 0.156)),
+        ZoomTarget(name: "Douady Rabbit", center: SIMD2(0.369_596, 0.226_666), minScale: 1.0e-5, parameter: SIMD2(-0.123, 0.745)),
+        ZoomTarget(name: "Spiral Arms", center: SIMD2(-0.227_946, -0.113_322), minScale: 1.5e-10, parameter: SIMD2(-0.7269, 0.1889)),
+        ZoomTarget(name: "Filament Nest", center: SIMD2(-0.273_268, 0.278_440), minScale: 2.0e-10, parameter: SIMD2(-0.4, 0.6)),
+        ZoomTarget(name: "Galaxy Swirl", center: SIMD2(-0.544_754, -0.231_564), minScale: 1.5e-10, parameter: SIMD2(-0.7, 0.270_15)),
+        // Dendrite/Airplane (thin sets, center 0) never survive deep zoom — replaced.
+        ZoomTarget(name: "Snowflake", center: SIMD2(-0.600_150, -0.229_852), minScale: 1.5e-10, parameter: SIMD2(-0.745_43, 0.113_01)),
+        ZoomTarget(name: "Classic Spiral", center: SIMD2(-0.448_627, -0.480_322), minScale: 1.5e-10, parameter: SIMD2(-0.835, -0.2321)),
     ]
 
     func fillOrbit(
@@ -209,18 +219,18 @@ struct BurningShipFormula: FractalFormula {
     let shaderID = FormulaShaderID.burningShip
     let tuning = FormulaTuning()
     let targets: [ZoomTarget] = [
-        ZoomTarget(name: "Main Hull", center: SIMD2(-1.76, 0.03), minScale: 1.5e-10),
-        ZoomTarget(name: "Bow Detail", center: SIMD2(-1.768, 0.0055), minScale: 1.0e-10),
-        ZoomTarget(name: "Western Ship", center: SIMD2(-1.861, 0.005), minScale: 2.0e-10),
-        ZoomTarget(name: "Mid Fleet", center: SIMD2(-1.627, 0.015), minScale: 2.0e-10),
-        ZoomTarget(name: "Upper Deck", center: SIMD2(-1.775, 0.01), minScale: 1.5e-10),
+        ZoomTarget(name: "Main Hull", center: SIMD2(-1.785_912_7612, -0.008_259_0232), minScale: 1.5e-10),
+        ZoomTarget(name: "Bow Detail", center: SIMD2(-1.775_144_8613, -0.023_015_6240), minScale: 1.0e-10),
+        ZoomTarget(name: "Western Ship", center: SIMD2(-1.771_228_2519, -0.022_807_0054), minScale: 2.0e-10),
+        ZoomTarget(name: "Mid Fleet", center: SIMD2(-1.635_609_8577, -0.005_969_0731), minScale: 2.0e-10),
+        ZoomTarget(name: "Upper Deck", center: SIMD2(-1.755_133_1857, -0.023_507_2807), minScale: 1.5e-10),
         ZoomTarget(name: "Bow Jets", center: SIMD2(-1.749_7, -0.031_62), minScale: 1.5e-10),
-        ZoomTarget(name: "Main Antenna", center: SIMD2(-1.756, -0.028), minScale: 1.5e-10),
+        ZoomTarget(name: "Main Antenna", center: SIMD2(-1.780_023_4576, -0.019_393_8934), minScale: 1.5e-10),
         ZoomTarget(name: "Mini Ship", center: SIMD2(-1.762, -0.028), minScale: 1.0e-10),
-        ZoomTarget(name: "Ship −1.57", center: SIMD2(-1.565, -0.017), minScale: 2.0e-10),
-        ZoomTarget(name: "Far Ship −1.94", center: SIMD2(-1.936_5, -0.003_75), minScale: 1.5e-10),
+        ZoomTarget(name: "Ship −1.57", center: SIMD2(-1.498_438_9073, -0.052_157_3403), minScale: 2.0e-10),
+        ZoomTarget(name: "Far Ship −1.94", center: SIMD2(-1.764_009_3067, -0.024_063_5550), minScale: 1.5e-10),
         ZoomTarget(name: "Deep Antenna", center: SIMD2(-1.778_7, -0.016_221_6), minScale: 1.0e-10),
-        ZoomTarget(name: "Mast", center: SIMD2(-1.773_75, -0.058_25), minScale: 2.0e-10),
+        ZoomTarget(name: "Mast", center: SIMD2(-1.749_496_7219, 0.003_791_2354), minScale: 2.0e-10),
     ]
 
     func fillOrbit(
@@ -264,14 +274,14 @@ struct TricornFormula: FractalFormula {
     let shaderID = FormulaShaderID.tricorn
     let tuning = FormulaTuning()
     let targets: [ZoomTarget] = [
-        ZoomTarget(name: "Main Body", center: SIMD2(-0.5, 0.0), minScale: 2.0e-10),
-        ZoomTarget(name: "Upper Bulb", center: SIMD2(-0.15, 0.85), minScale: 2.0e-10),
-        ZoomTarget(name: "Lower Bulb", center: SIMD2(-0.15, -0.85), minScale: 2.0e-10),
+        ZoomTarget(name: "Main Body", center: SIMD2(-0.733_778_0518, 0.078_903_8215), minScale: 2.0e-10),
+        ZoomTarget(name: "Upper Bulb", center: SIMD2(0.300_065_7581, 0.669_711_1708), minScale: 2.0e-10),
+        ZoomTarget(name: "Lower Bulb", center: SIMD2(0.295_531_4105, -0.681_193_6090), minScale: 2.0e-10),
         ZoomTarget(name: "West Tip", center: SIMD2(-1.75, 0.0), minScale: 1.5e-10),
-        ZoomTarget(name: "Filament Nest", center: SIMD2(-0.2, 0.65), minScale: 2.0e-10),
-        ZoomTarget(name: "Triple Spiral", center: SIMD2(0.0, 0.75), minScale: 1.5e-10),
-        ZoomTarget(name: "Mirror Seahorse", center: SIMD2(-0.75, 0.12), minScale: 1.5e-10),
-        ZoomTarget(name: "Edge Spire", center: SIMD2(-0.05, 1.0), minScale: 2.0e-10),
+        ZoomTarget(name: "Filament Nest", center: SIMD2(0.289_960_8786, 0.661_810_4241), minScale: 2.0e-10),
+        ZoomTarget(name: "Triple Spiral", center: SIMD2(0.235_218_6269, 0.527_987_4027), minScale: 1.5e-10),
+        ZoomTarget(name: "Mirror Seahorse", center: SIMD2(-0.972_452_2760, 0.103_755_1066), minScale: 1.5e-10),
+        ZoomTarget(name: "Edge Spire", center: SIMD2(0.389_293_0354, 0.888_903_9520), minScale: 2.0e-10),
     ]
 
     func fillOrbit(
@@ -315,15 +325,16 @@ struct BurningShipJuliaFormula: FractalFormula {
     let displayName = "Ship Julia"
     let shaderID = FormulaShaderID.burningShipJulia
     let tuning = FormulaTuning(overviewScale: 1.8)
+    // Only `c` values that keep a deep boundary under the zoom center.
     let targets: [ZoomTarget] = [
-        ZoomTarget(name: "Classic Ship c", center: SIMD2(0.0, 0.0), minScale: 2.0e-10, parameter: SIMD2(-1.76, 0.03)),
-        ZoomTarget(name: "Bow Jets c", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(-1.749_7, -0.031_62)),
-        ZoomTarget(name: "Antenna c", center: SIMD2(0.15, 0.1), minScale: 1.5e-10, parameter: SIMD2(-1.756, -0.028)),
-        ZoomTarget(name: "Near Hull", center: SIMD2(-0.2, 0.05), minScale: 2.0e-10, parameter: SIMD2(-1.7, 0.0)),
-        ZoomTarget(name: "Mast Region", center: SIMD2(0.0, -0.1), minScale: 2.0e-10, parameter: SIMD2(-1.773_75, -0.058_25)),
-        ZoomTarget(name: "Deep Antenna c", center: SIMD2(0.05, 0.0), minScale: 1.0e-10, parameter: SIMD2(-1.778_7, -0.016_221_6)),
-        ZoomTarget(name: "Far West c", center: SIMD2(0.0, 0.0), minScale: 1.5e-10, parameter: SIMD2(-1.86, 0.005)),
-        ZoomTarget(name: "Mid Fleet c", center: SIMD2(0.1, -0.05), minScale: 2.0e-10, parameter: SIMD2(-1.627, 0.015)),
+        ZoomTarget(name: "Deep Antenna c", center: SIMD2(0.252_281_2806, 0.052_609_5379), minScale: 1.0e-10, parameter: SIMD2(-1.778_7, -0.016_221_6)),
+        ZoomTarget(name: "Bow Jets c", center: SIMD2(-0.231_214_4884, -0.041_184_0413), minScale: 1.5e-10, parameter: SIMD2(-1.749_7, -0.031_62)),
+        ZoomTarget(name: "Antenna c", center: SIMD2(0.606_270_9453, 0.069_940_9566), minScale: 1.5e-10, parameter: SIMD2(-1.756, -0.028)),
+        ZoomTarget(name: "Mast Region", center: SIMD2(-0.104_419_9790, -0.196_740_1539), minScale: 2.0e-10, parameter: SIMD2(-1.773_75, -0.058_25)),
+        ZoomTarget(name: "Hull Jets", center: SIMD2(-0.078_067_1636, -0.190_102_2830), minScale: 1.5e-10, parameter: SIMD2(-1.75, -0.03)),
+        ZoomTarget(name: "West Mast c", center: SIMD2(0.979_182_1416, 0.051_655_7276), minScale: 1.5e-10, parameter: SIMD2(-1.731_790, -0.055_991)),
+        ZoomTarget(name: "Mid Antenna c", center: SIMD2(0.870_738_9550, 0.007_225_6337), minScale: 1.5e-10, parameter: SIMD2(-1.638_560, -0.021_772)),
+        ZoomTarget(name: "Fleet Tip c", center: SIMD2(0.253_039_0737, -0.078_242_2721), minScale: 2.0e-10, parameter: SIMD2(-1.570_598, -0.050_534)),
     ]
 
     func fillOrbit(
